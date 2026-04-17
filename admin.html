@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hexy Studio</title>
+<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.2.3/dist/tus.min.js"></script>
+<style>
+:root{
+  --bg:#f5f5f7; --card:#ffffffcc; --text:#1d1d1f; --muted:#6e6e73;
+  --line:#e5e5ea; --blue:#007aff; --blue-press:#0051d5;
+  --radius:20px; --blur:20px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#000;--card:#1c1c1ecc;--text:#f5f5f7;--muted:#98989d;--line:#38383a}
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,system-ui,sans-serif;
+  background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased;
+}
+.app{max-width:560px;margin:0 auto;padding:16px;padding-bottom:40px}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 4px 20px}
+.title{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.subtitle{font-size:15px;color:var(--muted);margin-top:2px}
+.icon-btn{width:36px;height:36px;border-radius:12px;background:var(--card);backdrop-filter:blur(var(--blur));display:grid;place-items:center;border:1px solid var(--line)}
+.card{
+  background:var(--card); backdrop-filter:blur(var(--blur));
+  border:1px solid var(--line); border-radius:var(--radius);
+  padding:20px; margin-bottom:16px; box-shadow:0 4px 24px rgba(0,0,0,.06)
+}
+h2{font-size:20px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+label{font-size:13px;font-weight:500;color:var(--muted);margin:16px 0 8px;display:block}
+input,textarea,select{
+  width:100%;height:48px;padding:0 14px;font-size:16px;
+  background:transparent;border:1px solid var(--line);border-radius:12px;
+  color:var(--text);outline:none;transition:.15s;
+}
+textarea{height:88px;padding:12px 14px;resize:none}
+input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #007aff22}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{
+  padding:8px 14px;font-size:14px;font-weight:500;border-radius:100px;
+  background:transparent;border:1px solid var(--line);color:var(--muted);
+  transition:.15s;user-select:none
+}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn{
+  width:100%;height:48px;margin-top:20px;border:0;border-radius:12px;
+  background:var(--blue);color:#fff;font-size:17px;font-weight:600;
+  transition:.15s;
+}
+.btn:active{background:var(--blue-press);transform:scale(.98)}
+.btn:disabled{opacity:.5}
+.progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:14px;display:none}
+.bar{height:100%;width:0%;background:var(--blue);transition:width.2s}
+.status{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px;font-variant-numeric:tabular-nums}
+.list{margin-top:18px;border-top:1px solid var(--line)}
+.item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px}
+.item:last-child{border:0}
+.item.ep{color:var(--muted);font-variant-numeric:tabular-nums}
+.toast{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(100px);
+  background:#1d1d1f;color:#fff;padding:12px 18px;border-radius:12px;
+  font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.3);
+  transition:.3s;z-index:99;opacity:0
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.row{display:flex;gap:10px}
+.row > *{flex:1}
+.file{
+  position:relative;height:48px;border:1px dashed var(--line);border-radius:12px;
+  display:grid;place-items:center;color:var(--muted);font-size:14px;overflow:hidden
+}
+.file input{position:absolute;inset:0;opacity:0}
+.file.has{border-style:solid;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="title">Hexy Studio</div>
+      <div class="subtitle">Create • Upload • Stream</div>
+    </div>
+    <button class="icon-btn" id="settings" aria-label="settings">
+      <svg width="20" height="20" fill="none"><path d="M10 12.5a2.5 2.5 0 100-5 2.5 0 000 5zM14.5 10a4.5 0 11-9 0 4.5 0 019 0z" stroke="currentColor" stroke-width="1.4"/><path d="M10 3.5V5m0 10v1.5M16.5 10H15M5 10H3.5M14.2 5.8l-1 1M6.8 14.2l-1 1m9.4-1l-1-1M6.8 5.8l-1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+
+  <section class="card">
+    <h2>New Anime</h2>
+    <label>Title</label>
+    <input id="title" placeholder="Demon Slayer" autocomplete="off">
+    <label>Description</label>
+    <textarea id="desc" placeholder="A brief synopsis..."></textarea>
+    <label>Genres</label>
+    <div class="chips" id="genres">
+      <div class="chip" data-v="action">Action</div>
+      <div class="chip" data-v="adventure">Adventure</div>
+      <div class="chip" data-v="fantasy">Fantasy</div>
+      <div class="chip" data-v="romance">Romance</div>
+      <div class="chip" data-v="isekai">Isekai</div>
+      <div class="chip" data-v="comedy">Comedy</div>
+    </div>
+    <label>Poster URL</label>
+    <input id="poster" placeholder="https://..." inputmode="url">
+    <button class="btn" id="createBtn">Create Anime</button>
+    <div class="status" id="createStatus"></div>
+  </section>
+
+  <section class="card">
+    <h2>Upload Episode</h2>
+    <label>Anime</label>
+    <select id="animeSelect"><option>Loading...</option></select>
+    <div class="row">
+      <div>
+        <label>Episode</label>
+        <input id="epNum" type="number" min="1" value="1">
+      </div>
+      <div>
+        <label>Title</label>
+        <input id="epTitle" placeholder="Episode title">
+      </div>
+    </div>
+    <label>Video File</label>
+    <div class="file" id="fileBox"><span id="fileLabel">Tap to choose video</span><input id="file" type="file" accept="video/*"></div>
+    <button class="btn" id="uploadBtn">Upload</button>
+    <div class="progress" id="prog"><div class="bar" id="bar"></div></div>
+    <div class="status" id="upStatus"></div>
+    <div class="list" id="epList"></div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://hexy.vantaa.workers.dev';
+let TOKEN = localStorage.getItem('hexy_token') || '';
+
+const $ = s => document.querySelector(s);
+const toast = (m) => { const t=$('#toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500) };
+const fmt = b => b < 1048576? Math.round(b/1024)+' KB' : (b/1048576).toFixed(1)+' MB';
+
+$('#settings').onclick = () => {
+  const v = prompt('Admin token (leave empty if none):', TOKEN);
+  if(v!==null){ TOKEN=v.trim(); localStorage.setItem('hexy_token', TOKEN); toast('Token saved') }
+};
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>c.classList.toggle('on'));
+$('#file').onchange = e => {
+  const f=e.target.files[0];
+  $('#fileLabel').textContent = f? f.name : 'Tap to choose video';
+  $('#fileBox').classList.toggle('has',!!f);
+};
+
+async function api(path, opts={}){
+  const headers = {'Content-Type':'application/json',...(opts.headers||{})};
+  if(TOKEN) headers['Authorization'] = 'Bearer '+TOKEN;
+  const r = await fetch(API+path, {...opts, headers});
+  if(!r.ok){ const t=await r.text(); throw new Error(t||r.status) }
+  return r.headers.get('content-type')?.includes('json')? r.json() : r.text();
+}
+
+async function loadAnimes(){
+  try{
+    const data = await api('/api/anime');
+    $('#animeSelect').innerHTML = data.map(a=>`<option value="${a.id}">${a.title} (${a.eps.length})</option>`).join('') || '<option>No anime</option>';
+    showEpisodes();
+  }catch(e){ $('#animeSelect').innerHTML='<option>Error</option>'; toast('Load failed') }
+}
+
+function showEpisodes(){
+  api('/api/anime').then(data=>{
+    const an = data.find(x=>x.id==$('#animeSelect').value);
+    $('#epList').innerHTML = an?.eps.map(e=>`<div class="item"><span class="ep">EP ${e.n}</span><span>${e.title||''}</span></div>`).join('') || '';
+    if(an) $('#epNum').value = (an.eps.length+1);
+  }).catch(()=>{});
+}
+$('#animeSelect').onchange = showEpisodes;
+
+$('#createBtn').onclick = async () => {
+  const btn = $('#createBtn'); btn.disabled=true; $('#createStatus').textContent='Creating...';
+  try{
+    const body = {
+      title: $('#title').value.trim(),
+      description: $('#desc').value.trim(),
+      poster: $('#poster').value.trim(),
+      genres: [...document.querySelectorAll('.chip.on')].map(c=>c.dataset.v)
+    };
+    if(!body.title) throw new Error('Title required');
+    await api('/api/admin/anime',{method:'POST',body:JSON.stringify(body)});
+    $('#createStatus').textContent='✓ Created';
+    toast('Anime created');
+    $('#title').value=$('#desc').value=$('#poster').value=''; document.querySelectorAll('.chip.on').forEach(c=>c.classList.remove('on'));
+    loadAnimes();
+  }catch(e){ $('#createStatus').textContent='Failed'; toast(e.message) }
+  finally{ btn.disabled=false; setTimeout(()=>$('#createStatus').textContent='',2000) }
+};
+
+$('#uploadBtn').onclick = async () => {
+  const file = $('#file').files[0]; if(!file) return toast('Choose video');
+  const btn=$('#uploadBtn'); btn.disabled=true; $('#prog').style.display='block'; $('#upStatus').textContent='Requesting...';
+  try{
+    const sig = await api('/api/admin/episode',{method:'POST',body:JSON.stringify({
+      animeId: $('#animeSelect').value,
+      episodeNum: $('#epNum').value,
+      title: $('#epTitle').value
+    })});
+    await new Promise((resolve,reject)=>{
+      new tus.Upload(file,{
+        endpoint:'https://video.bunnycdn.com/tusupload',
+        chunkSize: 8*1024*1024,
+        headers:{AuthorizationSignature:sig.signature,AuthorizationExpire:sig.expire,VideoId:sig.guid,LibraryId:sig.libraryId},
+        metadata:{title:file.name},
+        onError:reject,
+        onProgress:(u,t)=>{
+          const p = Math.round(u/t*100);
+          $('#bar').style.width = p+'%';
+          $('#upStatus').textContent = `Uploading... ${p}% — ${fmt(u)} / ${fmt(t)}`;
+        },
+        onSuccess:resolve
+      }).start();
+    });
+    $('#upStatus').textContent='✓ Done — 100%';
+    toast('Upload complete');
+    $('#file').value=''; $('#fileLabel').textContent='Tap to choose video'; $('#fileBox').classList.remove('has'); $('#epTitle').value=''; loadAnimes();
+  }catch(e){ $('#upStatus').textContent='Failed'; toast(e.message) }
+  finally{ btn.disabled=false; setTimeout(()=>{$('#prog').style.display='none';$('#bar').style.width='0%';},2000); }
+};
+
+loadAnimes();
+if(!TOKEN){ setTimeout(()=>toast('Tap gear to set admin token'),800) }
+</script>
+</body>
+</html>
